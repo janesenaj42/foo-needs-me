@@ -77,8 +77,8 @@ export default function (pi: any) {
     pi.on("ui_prompt_start", () => write("blocked", "needs input"));
   } catch {}
 
-  pi.registerCommand("open-dashboard", {
-    description: "Open the pi/claude sessions dashboard in a new window",
+  pi.registerCommand("fooboard", {
+    description: "Open the foo-needs-me dashboard in a new window",
     handler: async (_args: string, ctx: any) => {
       if (process.platform !== "win32") {
         ctx.ui.notify(`Run: node ${viewer}`, "info");

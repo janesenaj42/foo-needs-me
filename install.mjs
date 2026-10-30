@@ -13,10 +13,22 @@ const targets = [
   ["status-beacon.ts", join(home, ".pi", "agent", "extensions", "status-beacon.ts")],
   ["pi-status.mjs", join(home, ".pi", "pi-status.mjs")],
   ["cc-beacon.mjs", join(home, ".pi", "cc-beacon.mjs")],
+  ["fooboard.mjs", join(home, ".pi", "fooboard.mjs")],
 ];
 const EVENTS = ["SessionStart", "UserPromptSubmit", "PostToolUse", "Notification", "Stop", "SessionEnd", "SubagentStart", "SubagentStop"];
 const settingsPath = join(home, ".claude", "settings.json");
 const hookCmd = `node ${join(home, ".pi", "cc-beacon.mjs").replace(/\\/g, "/")}`;
+// Claude Code custom command: /fooboard (absolute path baked in, so it works from any shell)
+const cmdFile = join(home, ".claude", "commands", "fooboard.md");
+const launcher = join(home, ".pi", "fooboard.mjs").replace(/\\/g, "/");
+const cmdBody = `---
+description: Open the foo-needs-me dashboard in a new window
+allowed-tools: Bash(node:*)
+---
+!\`node "${launcher}"\`
+
+Reply with one short line: say the dashboard opened, or relay the message printed above if it could not open a window.
+`;
 const isOurs = (h) => typeof h?.command === "string" && h.command.includes("cc-beacon.mjs");
 
 function loadSettings() {
@@ -32,6 +44,9 @@ function saveSettings(s) {
 
 if (uninstall) {
   for (const [, dest] of targets) { try { unlinkSync(dest); console.log("removed", dest); } catch {} }
+  try {
+    if (readFileSync(cmdFile, "utf8").includes("foo-needs-me")) { unlinkSync(cmdFile); console.log("removed", cmdFile); }
+  } catch {}
   const s = loadSettings();
   if (s?.hooks) {
     for (const ev of EVENTS) {
@@ -53,6 +68,10 @@ for (const [src, dest] of targets) {
   console.log("installed", dest);
 }
 
+mkdirSync(dirname(cmdFile), { recursive: true });
+writeFileSync(cmdFile, cmdBody);
+console.log("installed", cmdFile);
+
 const s = loadSettings() ?? {};
 s.hooks ??= {};
 let added = 0;
@@ -66,6 +85,6 @@ else console.log("Claude Code hooks already present");
 
 console.log(`
 Done. Next:
-  - run /reload in each pi (or restart it)
-  - restart running Claude Code sessions so they load the hooks
-  - in pi, type /open-dashboard   (or: node ${join(home, ".pi", "pi-status.mjs")})`);
+  pi:          /reload in each pi session (or restart it), then type /fooboard
+  Claude Code: restart running sessions (hooks load at startup), then type /fooboard
+  either way:  node ${join(home, ".pi", "pi-status.mjs")}   in any spare terminal`);

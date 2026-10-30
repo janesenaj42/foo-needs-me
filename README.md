@@ -2,18 +2,67 @@
 
 Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your pi and Claude Code sessions are waiting on you. No tmux needed (works on native Windows).
 
-- `status-beacon.ts` - pi extension: writes session state to `~/.pi/status/`, adds `/open-dashboard`
+- `status-beacon.ts` - pi extension: writes session state to `~/.pi/status/`, adds `/fooboard`
 - `cc-beacon.mjs` - Claude Code hook script: same state files, driven by hooks
 - `pi-status.mjs` - the viewer (`--once` prints one frame, `--once --tick=N` for a specific animation frame)
 - `install.mjs` - copies files into `~/.pi/` and merges hooks into `~/.claude/settings.json` (backup first)
 
-## Install / update / remove
+## Install
 
+    git clone https://github.com/janesenaj42/foo-needs-me
+    cd foo-needs-me
     node install.mjs              # install or update (idempotent)
-    node install.mjs --uninstall  # remove files and our hooks
+    node install.mjs --uninstall  # remove everything it installed
 
-Then `/reload` in each pi, restart running Claude Code sessions, and run `/open-dashboard` in pi
-(or `node ~/.pi/pi-status.mjs`).
+Needs Node 18+. The installer copies the scripts into `~/.pi/`, adds the hooks to `~/.claude/settings.json` (backup first) and adds a `/fooboard` command to `~/.claude/commands/`. After installing, do the per-tool steps below.
+
+### Pi
+
+1. Run `/reload` in each running pi session (or restart it). Extensions only load at startup or on reload.
+2. Type `/fooboard`. A new window opens with the dashboard (Windows; elsewhere it tells you the command to run).
+
+### Claude Code
+
+1. Restart running Claude Code sessions. Hooks are read at startup, and a session only shows up after its next hook event.
+2. Type `/fooboard`. It is a custom command that runs `node ~/.pi/fooboard.mjs`, which opens the dashboard in a new window (Windows). It costs a short model reply each time; if you'd rather not, use the next option.
+
+### Either way
+
+Run `node ~/.pi/pi-status.mjs` in any spare terminal (on Windows: `node %USERPROFILE%\.pi\pi-status.mjs`). The dashboard shows every Pi and Claude Code session no matter which one opened it.
+
+## Supported tools
+
+| Tool | Status | How |
+|---|---|---|
+| Pi | works | extension (`status-beacon.ts`) |
+| Claude Code | works | hooks (`cc-beacon.mjs`) |
+| Codex CLI | not built yet | has a `notify` hook (turn complete) and an approval-requested event, plus an experimental hooks engine |
+| Gemini CLI | not built yet | has hooks (v0.26.0 and later) |
+| Roo Code, Kilo Code | not built yet | VS Code extensions, so no shell hooks; they emit task events (idle, interactive, etc.) through their extension API, so it would take a small VS Code extension |
+
+The dashboard itself does not care which tool a session comes from. It only reads small JSON files from `~/.pi/status/`, so it runs in its own terminal window next to VS Code or anything else. A tool shows up as soon as something writes a status file for it.
+
+### Adding another tool
+
+Write one file per session to `~/.pi/status/<anything>.json` whenever its state changes, and delete it when the session ends:
+
+```json
+{ "kind": "codex", "id": "session-1", "cwd": "/path/to/project", "state": "idle", "reason": "", "since": 1761820000000, "updated": 1761820000000 }
+```
+
+- `kind`: tool name, shown in the tool column (`claude` is orange, `pi` is purple, anything else is blue)
+- `state`: `working`, `idle` (finished its turn) or `blocked` (needs you; put a short note like `approve?` in `reason`)
+- `since`: when it entered this state; `updated`: last write (both milliseconds since epoch)
+- `pid` (optional): if set, the entry disappears when that process dies. Without it, an entry is dropped after 12 hours without an update.
+- Subagents: write `{ "kind": "sub", "session_id": "<id of the parent>" }` (or `"parent_pid"` for pid-based parents) with the same `updated`/`pid` rules.
+
+Untested sketch for PowerShell (Codex's `notify` hook, for example, could run something like this):
+
+```powershell
+$now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+@{ kind="codex"; id="s1"; cwd=(Get-Location).Path; state="idle"; since=$now; updated=$now } |
+  ConvertTo-Json | Set-Content "$env:USERPROFILE\.pi\status\codex-s1.json"
+```
 
 ## Reading the dashboard
 
@@ -75,7 +124,7 @@ Done sessions never get more worried over time; they just fade.
 **Bottom line.** One quip: unblock stuck agents first, otherwise "nothing urgent" (with a count of fresh results when there are some).
 
 **Gotchas.**
-- Only sessions that loaded the beacon show up: `/reload` pi sessions and restart Claude Code sessions after installing. A Claude session appears after its next hook event.
+- Only sessions that loaded the beacon show up: `/reload` pi sessions and restart Claude Code sessions after installing (see Install). A Claude session appears after its next hook event.
 - Claude Code entries have no PID, so a killed terminal can linger up to 12 hours.
 - Pi `needs you` is best-effort (see Notes).
 

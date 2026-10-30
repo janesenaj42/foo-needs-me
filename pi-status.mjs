@@ -111,7 +111,8 @@ function frame(tick) {
     if (hideParked && parked(r, now)) continue;
     const waited = now - r.since;
     const m = mood(r, waited, tick);
-    const tool = r.kind === "claude" ? c("38;5;208", pad("claude", 7)) : c("35", pad("pi", 7));
+    const toolCol = r.kind === "claude" ? "38;5;208" : r.kind === "pi" ? "35" : "34"; // other tools: blue
+    const tool = c(toolCol, pad(String(r.kind || "?"), 7));
     const n = subsOf(r).length;
     const line =
       c(m.col, pad(m.face, 8)) + " " + pad(basename(r.cwd) || r.cwd, 22) + " " + tool + " " +
