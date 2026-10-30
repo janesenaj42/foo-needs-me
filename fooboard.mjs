@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const viewer = join(homedir(), ".pi", "pi-status.mjs");
+const viewer = join(homedir(), ".foo-needs-me", "pi-status.mjs");
 
 if (process.platform === "win32") {
   spawn("cmd.exe", ["/d", "/c", `start "fooboard" node "${viewer}"`], {

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, basename } from "node:path";
 
-const dir = join(homedir(), ".pi", "status");
+const dir = join(homedir(), ".foo-needs-me", "status");
 const STALE_MS = 12 * 3600 * 1000; // claude entries (no pid) expire after 12h without updates
 const SUB_TTL_MS = 3600 * 1000;    // subagent entries that never got a SubagentStop expire after 1h
 const PARK_MS = Number(process.env.PI_STATUS_PARK_MIN || 60) * 60000; // done for longer than this = "parked" (you moved on)
@@ -35,9 +35,7 @@ function rootPid(sub) {
   return pp;
 }
 const subsOf = (r) =>
-  r.kind === "claude"
-    ? subs.filter((x) => x.session_id === r.id)
-    : subs.filter((x) => x.pid && rootPid(x) === r.pid);
+  subs.filter((x) => (x.session_id ? x.session_id === r.id : x.pid && r.pid && rootPid(x) === r.pid));
 
 function load() {
   let files = [];

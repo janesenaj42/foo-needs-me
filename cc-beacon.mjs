@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync, unlinkSync, readFileSync, readdirSync } from 
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const dir = join(homedir(), ".pi", "status");
+const dir = join(homedir(), ".foo-needs-me", "status");
 let raw = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (d) => (raw += d));

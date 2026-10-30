@@ -3,8 +3,8 @@ import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const dir = join(homedir(), ".pi", "status");
-const viewer = join(homedir(), ".pi", "pi-status.mjs");
+const dir = join(homedir(), ".foo-needs-me", "status");
+const viewer = join(homedir(), ".foo-needs-me", "pi-status.mjs");
 // Pi subagent extensions run workers as child pi processes and set PI_SUBAGENT_DEPTH (>0 inside a worker).
 const isSub = Number(process.env.PI_SUBAGENT_DEPTH || 0) > 0;
 const file = join(dir, `${isSub ? "sub" : "pi"}-${process.pid}.json`);

@@ -2,19 +2,21 @@
 
 Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your pi and Claude Code sessions are waiting on you. No tmux needed (works on native Windows).
 
-- `status-beacon.ts` - pi extension: writes session state to `~/.pi/status/`, adds `/fooboard`
+- `status-beacon.ts` - pi extension: writes session state to `~/.foo-needs-me/status/`, adds `/fooboard`
 - `cc-beacon.mjs` - Claude Code hook script: same state files, driven by hooks
 - `pi-status.mjs` - the viewer (`--once` prints one frame, `--once --tick=N` for a specific animation frame)
-- `install.mjs` - copies files into `~/.pi/` and merges hooks into `~/.claude/settings.json` (backup first)
+- `opencode-beacon.ts` - opencode plugin (experimental): same state files, driven by opencode's events
+- `fooboard.mjs` - launcher that opens the dashboard in a new window
+- `install.mjs` - installs for whichever of pi, Claude Code and opencode it finds (copies scripts into `~/.foo-needs-me/`, merges hooks into `~/.claude/settings.json` with a backup)
 
 ## Install
 
     git clone https://github.com/janesenaj42/foo-needs-me
     cd foo-needs-me
-    node install.mjs              # install or update (idempotent)
+    node install.mjs              # installs for the tools it finds; safe to re-run
     node install.mjs --uninstall  # remove everything it installed
 
-Needs Node 18+. The installer copies the scripts into `~/.pi/`, adds the hooks to `~/.claude/settings.json` (backup first) and adds a `/fooboard` command to `~/.claude/commands/`. After installing, do the per-tool steps below.
+Needs Node 18+. Everything lives in `~/.foo-needs-me/` (scripts and the `status/` folder), so you do not need pi installed for this to work. The installer only sets up the tools it finds (`pi`, `claude`, `opencode` on your PATH or their config folders). Force one with `--pi`, `--claude` or `--opencode`.
 
 ### Pi
 
@@ -24,27 +26,35 @@ Needs Node 18+. The installer copies the scripts into `~/.pi/`, adds the hooks t
 ### Claude Code
 
 1. Restart running Claude Code sessions. Hooks are read at startup, and a session only shows up after its next hook event.
-2. Type `/fooboard`. It is a custom command that runs `node ~/.pi/fooboard.mjs`, which opens the dashboard in a new window (Windows). It costs a short model reply each time; if you'd rather not, use the next option.
+2. Type `/fooboard`. It is a custom command that runs `node ~/.foo-needs-me/fooboard.mjs`, which opens the dashboard in a new window (Windows). It costs a short model reply each time; if you'd rather not, use "Either way" below.
+
+The VS Code extension shares `~/.claude/settings.json` with the CLI, so it should be tracked the same way. Anthropic's docs say hooks are shared, but one user reported hooks not firing in the extension in January 2026, so test it. Sessions from the CLI and the extension both appear in the same dashboard.
+
+### opencode (experimental)
+
+Restart opencode so it loads the plugin from `~/.config/opencode/plugins/`. There is no slash command; use "Either way" below. The plugin is written from opencode's documented plugin events (`session.status`, `session.idle`, `permission.asked`, `permission.replied`) and has not been run against a real opencode yet, so tell me what breaks.
 
 ### Either way
 
-Run `node ~/.pi/pi-status.mjs` in any spare terminal (on Windows: `node %USERPROFILE%\.pi\pi-status.mjs`). The dashboard shows every Pi and Claude Code session no matter which one opened it.
+Run `node ~/.foo-needs-me/pi-status.mjs` in any spare terminal (on Windows: `node %USERPROFILE%\.foo-needs-me\pi-status.mjs`). The dashboard shows every session from every tool, no matter which one opened it.
 
 ## Supported tools
 
 | Tool | Status | How |
 |---|---|---|
 | Pi | works | extension (`status-beacon.ts`) |
-| Claude Code | works | hooks (`cc-beacon.mjs`) |
+| Claude Code (CLI) | works | hooks (`cc-beacon.mjs`) |
+| Claude Code (VS Code extension) | should work, untested | shares the same `settings.json` hooks |
+| opencode | experimental | plugin (`opencode-beacon.ts`), not yet run against a real opencode |
 | Codex CLI | not built yet | has a `notify` hook (turn complete) and an approval-requested event, plus an experimental hooks engine |
 | Gemini CLI | not built yet | has hooks (v0.26.0 and later) |
 | Roo Code, Kilo Code | not built yet | VS Code extensions, so no shell hooks; they emit task events (idle, interactive, etc.) through their extension API, so it would take a small VS Code extension |
 
-The dashboard itself does not care which tool a session comes from. It only reads small JSON files from `~/.pi/status/`, so it runs in its own terminal window next to VS Code or anything else. A tool shows up as soon as something writes a status file for it.
+The dashboard itself does not care which tool a session comes from. It only reads small JSON files from `~/.foo-needs-me/status/`, so it runs in its own terminal window next to VS Code or anything else. A tool shows up as soon as something writes a status file for it.
 
 ### Adding another tool
 
-Write one file per session to `~/.pi/status/<anything>.json` whenever its state changes, and delete it when the session ends:
+Write one file per session to `~/.foo-needs-me/status/<anything>.json` whenever its state changes, and delete it when the session ends:
 
 ```json
 { "kind": "codex", "id": "session-1", "cwd": "/path/to/project", "state": "idle", "reason": "", "since": 1761820000000, "updated": 1761820000000 }
@@ -61,7 +71,7 @@ Untested sketch for PowerShell (Codex's `notify` hook, for example, could run so
 ```powershell
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 @{ kind="codex"; id="s1"; cwd=(Get-Location).Path; state="idle"; since=$now; updated=$now } |
-  ConvertTo-Json | Set-Content "$env:USERPROFILE\.pi\status\codex-s1.json"
+  ConvertTo-Json | Set-Content "$env:USERPROFILE\.foo-needs-me\status\codex-s1.json"
 ```
 
 ## Reading the dashboard
