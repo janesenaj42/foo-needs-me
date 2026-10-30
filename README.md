@@ -86,3 +86,7 @@ Done sessions never get more worried over time; they just fade.
 - States: `working`, `done` (finished its turn) and `needs you` (blocked on an approval or a question). Claude Code: `Stop` = done; `Notification` with `permission_prompt` or `elicitation_dialog` = needs you; `idle_prompt` = done; `PostToolUse` flips back to working. Pi: `agent_end` = done; `ui_prompt_start` (best effort, pi >= 0.85) = needs you, cleared by the next turn/tool event.
 - Pi workers from subagent extensions run as child pi processes. When `PI_SUBAGENT_DEPTH > 0` the beacon records them as subagents of the parent pi (via parent pid) instead of separate agents.
 - Pi events used: session_start, agent_start, agent_end, session_shutdown.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Fun project, use it however you like.
