@@ -22,8 +22,21 @@ const fmt = (ms) => {
 };
 const pad = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s.padEnd(n));
 
+// cut a line (with ANSI colors) to w visible characters so it never wraps
+function clip(line, w) {
+  let out = "", vis = 0;
+  for (let i = 0; i < line.length; ) {
+    const m = /^\x1b\[[0-9;]*[A-Za-z]/.exec(line.slice(i));
+    if (m) { out += m[0]; i += m[0].length; continue; }
+    if (vis >= w - 1 && i < line.length - 1 && !/^(\x1b\[[0-9;]*[A-Za-z])*$/.test(line.slice(i))) return out + "…\x1b[0m";
+    out += line[i++]; vis++;
+  }
+  return out;
+}
+
 let rows = [];
 let subs = [];
+let fullNames = process.argv.includes("--full-names"); // e toggles: lift the name cap
 // claude subagents link by session id; pi workers link by parent pid (nested workers roll up to the root pi)
 function rootPid(sub) {
   let pp = sub.parent_pid;
@@ -105,23 +118,40 @@ function frame(tick) {
   );
   L.push(`  [${bar}] ${urgent}`);
   L.push("");
+  // Layout fits the terminal: rows never wrap. Fixed columns take 27, the note 20 (14 when tight)
+  // and the "+N subagents" tag 13. The project column gets what is left, capped at 32 unless f is on.
+  const cols = process.stdout.columns || 120;
+  const nameOf = (r) => basename(r.cwd) || r.cwd;
+  const shown = rows.filter((r) => !(hideParked && parked(r, now)));
+  let tagW = shown.some((r) => subsOf(r).length) ? 13 : 0;
+  const longest = Math.max(22, ...shown.map((r) => nameOf(r).length));
+  let noteW = 20;
+  if (cols - 1 - 27 - noteW - tagW < 22) noteW = 14;
+  if (cols - 1 - 27 - noteW - tagW < 14) tagW = 0; // names matter more: drop the subagent tag when tight
+  const showTag = tagW > 0;
+  const room = Math.max(8, cols - 1 - 27 - noteW - tagW);
+  const nameW = Math.min(longest, room, fullNames ? Infinity : 32);
+
   for (const r of rows) {
     if (hideParked && parked(r, now)) continue;
     const waited = now - r.since;
     const m = mood(r, waited, tick);
     const toolCol = r.kind === "claude" ? "38;5;208" : r.kind === "pi" ? "35" : "34"; // other tools: blue
     const tool = c(toolCol, pad(String(r.kind || "?"), 7));
-    const n = subsOf(r).length;
+    const n = showTag ? subsOf(r).length : 0;
     const line =
-      c(m.col, pad(m.face, 8)) + " " + pad(basename(r.cwd) || r.cwd, 22) + " " + tool + " " +
-      pad(fmt(waited), 7) + c(m.col === "36" ? "2" : m.col, pad(m.note, 20)) + (n ? c("33", `+${n} subagent${n > 1 ? "s" : ""}`) : "");
+      c(m.col, pad(m.face, 8)) + " " + pad(nameOf(r), nameW) + " " + tool + " " +
+      pad(fmt(waited), 7) + c(m.col === "36" ? "2" : m.col, n ? pad(m.note, noteW) : m.note) + (n ? c("33", `+${n} subagent${n > 1 ? "s" : ""}`) : "");
     L.push("  " + (m.col === "2" ? c("2", line.replace(/\x1b\[[0-9;]*m/g, "")) : line)); // parked rows fade out
+    // f is on but the name still does not fit (narrow terminal): show it in full on its own line
+    if (fullNames && nameOf(r).length > nameW) L.push("  " + c("2", " ".repeat(9) + "\u21b3 " + nameOf(r)));
   }
   if (hideParked && parkedN) L.push("  " + c("2", `(${parkedN} parked hidden)`));
   L.push("");
   L.push("  " + c("2", quip(blocked, fresh, rows.length)));
-  L.push(c("2", "  q quit   p show/hide parked"));
-  return L;
+  L.push(c("2", "  q quit   p show/hide parked   f " + (fullNames ? "shorten names" : "full names")));
+  const w = process.stdout.columns || 120;
+  return L.map((l) => clip(l, w));
 }
 
 function draw(tick) {
@@ -143,6 +173,7 @@ if (process.stdin.isTTY) {
     const k = String(d);
     if (k === "q" || k === "\x03") quit();
     if (k === "p") hideParked = !hideParked;
+    if (k === "f") fullNames = !fullNames;
   });
 }
 process.on("SIGINT", quit);

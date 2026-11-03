@@ -28,6 +28,16 @@ foo-needs-me start --window   # in a new window (Windows)
 
 Inside a harness that supports it, type `/fooboard` to open it in a new window. After install you can also run `node ~/.foo-needs-me/dashboard.mjs` without npm.
 
+Hotkeys (also shown in the dashboard footer):
+
+| Key | Action |
+|---|---|
+| `p` | show or hide parked rows |
+| `f` | show full project names (press again to shorten) |
+| `q` | quit |
+
+Parking time is set with `PI_STATUS_PARK_MIN` (minutes, default 60).
+
 ## Supported harnesses
 
 | Harness | Flag | Integration | Hooks into | `/fooboard` | Subagents |
@@ -109,7 +119,7 @@ $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   (-.-)zZ  legacy-batch           claude  1h30m  parked
 
   2 are stuck on you. unblock them first.
-  q quit   p show/hide parked
+  q quit   p show/hide parked   f full names
 ```
 
 Only **needs you** is urgent. A finished session fades as you move on, so a pile of done sessions never looks like a to-do list.
@@ -126,7 +136,7 @@ Rows are sorted: needs you, done (newest first), working, parked.
 
 `+N subagents` on a row means that session has N helpers running. It is why a session can be busy for a long time. Subagents are not counted in the header.
 
-Keys: `p` shows or hides parked rows, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
+Rows always fit the terminal and never wrap. Long project names are shortened with `…`. Press `f` (see hotkeys above) to see them in full: the project column widens if the terminal has room, otherwise the full name appears on its own line under the row. In a narrow terminal (under about 70 columns) the `+N subagents` tag is dropped to leave room for names.
 
 Only sessions that loaded a beacon show up. A Claude Code session appears after its next hook event.
 
