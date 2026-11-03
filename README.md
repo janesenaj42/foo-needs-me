@@ -1,72 +1,74 @@
 # foo-needs-me
 
-Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your pi and Claude Code sessions are waiting on you. No tmux needed (works on native Windows).
+Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your pi, Claude Code and opencode sessions are waiting on you. No tmux needed, works on native Windows.
 
-- `status-beacon.ts` - pi extension: writes session state to `~/.foo-needs-me/status/`, adds `/fooboard`
-- `cc-beacon.mjs` - Claude Code hook script: same state files, driven by hooks
-- `pi-status.mjs` - the viewer (`--once` prints one frame, `--once --tick=N` for a specific animation frame)
-- `opencode-beacon.ts` - opencode plugin (experimental): same state files, driven by opencode's events
-- `fooboard.mjs` - launcher that opens the dashboard in a new window
-- `install.mjs` - installs for whichever of pi, Claude Code and opencode it finds (copies scripts into `~/.foo-needs-me/`, merges hooks into `~/.claude/settings.json` with a backup)
+![dashboard](docs/dashboard.png)
 
 ## Install
 
-    npx github:janesenaj42/foo-needs-me              # installs for the tools it finds; safe to re-run
-    npx github:janesenaj42/foo-needs-me --uninstall  # remove everything it installed
+```
+npx github:janesenaj42/foo-needs-me              # installs for the tools it finds; safe to re-run
+npx github:janesenaj42/foo-needs-me --uninstall  # removes everything it installed
+```
 
-Or from a clone: `node install.mjs` (same flags).
+Node 18+. From a clone, `node install.mjs` takes the same flags. Force a single tool with `--pi`, `--claude` or `--opencode`.
 
-Needs Node 18+. Everything lives in `~/.foo-needs-me/` (scripts and the `status/` folder), so you do not need pi installed for this to work. The installer only sets up the tools it finds (`pi`, `claude`, `opencode` on your PATH or their config folders). Force one with `--pi`, `--claude` or `--opencode`.
+Scripts and status files live in `~/.foo-needs-me/`. The installer copies each beacon to the tool's config folder and, for Claude Code, merges hooks into `~/.claude/settings.json` (backup saved first).
 
-### Pi
+Then open the dashboard in any spare terminal:
 
-1. Run `/reload` in each running pi session (or restart it). Extensions only load at startup or on reload.
-2. Type `/fooboard`. A new window opens with the dashboard (Windows; elsewhere it tells you the command to run).
+```
+node ~/.foo-needs-me/pi-status.mjs
+```
 
-### Claude Code
+Or type `/fooboard` in pi or Claude Code to open it in a new window. Restart running sessions (`/reload` in pi) so they load the beacon.
 
-1. Restart running Claude Code sessions. Hooks are read at startup, and a session only shows up after its next hook event.
-2. Type `/fooboard`. It is a custom command that runs `node ~/.foo-needs-me/fooboard.mjs`, which opens the dashboard in a new window (Windows). It costs a short model reply each time; if you'd rather not, use "Either way" below.
+## How it works
 
-The VS Code extension shares `~/.claude/settings.json` with the CLI, so it should be tracked the same way. Anthropic's docs say hooks are shared, but one user reported hooks not firing in the extension in January 2026, so test it. Sessions from the CLI and the extension both appear in the same dashboard.
+Each tool has a small beacon that writes one JSON file per session to `~/.foo-needs-me/status/`. The viewer reads that folder and renders it. The two sides only share the file format, so the viewer works the same for every tool.
 
-### opencode (experimental)
+| File | Role |
+|---|---|
+| `status-beacon.ts` | pi extension; adds `/fooboard` |
+| `cc-beacon.mjs` | Claude Code hook script |
+| `opencode-beacon.ts` | opencode plugin |
+| `pi-status.mjs` | the viewer (`--once` prints one frame, `--once --tick=N` a specific animation frame) |
+| `fooboard.mjs` | launcher that opens the viewer in a new window |
+| `install.mjs` | installer / uninstaller |
 
-Restart opencode so it loads the plugin from `~/.config/opencode/plugins/`. There is no slash command; use "Either way" below. The plugin is written from opencode's documented plugin events (`session.status`, `session.idle`, `permission.asked`, `permission.replied`) and has not been run against a real opencode yet, so tell me what breaks.
+### Events
 
-### Either way
-
-Run `node ~/.foo-needs-me/pi-status.mjs` in any spare terminal (on Windows: `node %USERPROFILE%\.foo-needs-me\pi-status.mjs`). The dashboard shows every session from every tool, no matter which one opened it.
-
-## Supported tools
-
-| Tool | Status | How |
+| Tool | Hooks into | Mapping |
 |---|---|---|
-| Pi | works | extension (`status-beacon.ts`) |
-| Claude Code (CLI) | works | hooks (`cc-beacon.mjs`) |
-| Claude Code (VS Code extension) | should work, untested | shares the same `settings.json` hooks |
-| opencode | experimental | plugin (`opencode-beacon.ts`), not yet run against a real opencode |
-| Codex CLI | not built yet | has a `notify` hook (turn complete) and an approval-requested event, plus an experimental hooks engine |
-| Gemini CLI | not built yet | has hooks (v0.26.0 and later) |
-| Roo Code, Kilo Code | not built yet | VS Code extensions, so no shell hooks; they emit task events (idle, interactive, etc.) through their extension API, so it would take a small VS Code extension |
+| Claude Code | `SessionStart`, `UserPromptSubmit`, `PostToolUse`, `Notification`, `Stop`, `SessionEnd`, `SubagentStart`, `SubagentStop` | `Stop` and `idle_prompt` = done; `permission_prompt` and `elicitation_dialog` = needs you; `PostToolUse` = working again |
+| pi | `session_start`, `agent_start`, `agent_end`, `session_shutdown`, `ui_prompt_start` (pi >= 0.85) | `agent_end` = done; `ui_prompt_start` = needs you, cleared by the next turn or tool event |
+| opencode | `session.status`, `session.idle`, `permission.asked`, `permission.replied` | idle = done; permission asked = needs you |
 
-The dashboard itself does not care which tool a session comes from. It only reads small JSON files from `~/.foo-needs-me/status/`, so it runs in its own terminal window next to VS Code or anything else. A tool shows up as soon as something writes a status file for it.
+Subagents:
+- Claude Code writes one `sub-<session>-<agent>.json` per running subagent, so parallel ones never race. `SessionEnd` clears them; orphans expire after 1h.
+- pi workers started with `PI_SUBAGENT_DEPTH > 0` are recorded as subagents of the parent pi via its pid.
 
-### Adding another tool
+Claude Code entries have no pid, so they are removed on `SessionEnd` or after 12h without updates.
 
-Write one file per session to `~/.foo-needs-me/status/<anything>.json` whenever its state changes, and delete it when the session ends:
+## Status file format
+
+Write `~/.foo-needs-me/status/<anything>.json` whenever a session changes state, and delete it when the session ends:
 
 ```json
 { "kind": "codex", "id": "session-1", "cwd": "/path/to/project", "state": "idle", "reason": "", "since": 1761820000000, "updated": 1761820000000 }
 ```
 
-- `kind`: tool name, shown in the tool column (`claude` is orange, `pi` is purple, anything else is blue)
-- `state`: `working`, `idle` (finished its turn) or `blocked` (needs you; put a short note like `approve?` in `reason`)
-- `since`: when it entered this state; `updated`: last write (both milliseconds since epoch)
-- `pid` (optional): if set, the entry disappears when that process dies. Without it, an entry is dropped after 12 hours without an update.
-- Subagents: write `{ "kind": "sub", "session_id": "<id of the parent>" }` (or `"parent_pid"` for pid-based parents) with the same `updated`/`pid` rules.
+| Field | Meaning |
+|---|---|
+| `kind` | tool name shown in the tool column (`claude` orange, `pi` purple, anything else blue) |
+| `state` | `working`, `idle` (finished its turn) or `blocked` (needs you; put a short note like `approve?` in `reason`) |
+| `since` | when it entered this state (ms since epoch) |
+| `updated` | last write (ms since epoch) |
+| `pid` | optional; the entry disappears when that process dies. Without it, an entry is dropped after 12h without an update |
 
-Untested sketch for PowerShell (Codex's `notify` hook, for example, could run something like this):
+Subagents: `{ "kind": "sub", "session_id": "<id of the parent>" }`, or `"parent_pid"` for pid-based parents, with the same `updated` and `pid` rules.
+
+Any tool that can run a script on its events can report in this way. PowerShell example:
 
 ```powershell
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
@@ -75,8 +77,6 @@ $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 ```
 
 ## Reading the dashboard
-
-![dashboard](docs/dashboard.png)
 
 ```
   ~ who needs me? foo needs me. ~
@@ -97,55 +97,22 @@ $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   q quit   p show/hide parked
 ```
 
-Only **needs you** is urgent. A session that is simply *done* is not asking for anything, and it fades as you move on, so a pile of finished sessions never looks like a to-do list.
+Only **needs you** is urgent. A finished session fades as you move on, so a pile of done sessions never looks like a to-do list.
 
-**Header.** `agents` is every Pi and Claude Code session reporting in, split by state:
-- `needs you` - blocked on an approval or a question (yellow). The only urgent state.
-- `done` - finished recently, a result you may want to look at (green)
-- `working` - busy (cyan)
-- `parked` - finished a while ago (default 1 hour) and you moved on (dim)
-- `subagents` - helper agents currently running under those sessions
-
-**Bar.** Each yellow `#` is a slice of your agents that needs a response; dots are everything else. The label says `N need you`, or `nothing urgent`.
-
-**Rows**, in this order: needs you, then done (newest first), then working, then parked.
-
-| Column | Meaning |
-|---|---|
-| face | mood, see below |
-| project | folder name the session runs in |
-| tool | `claude` or `pi` |
-| time | how long it has been in its current state |
-| note | short status text |
-| `+N sub` | N subagents currently running under that session |
+Rows are sorted: needs you, done (newest first), working, parked.
 
 | Face | State |
 |---|---|
 | `(!_!)` | needs you: `approve?` = permission prompt, `has a question` / `needs input` = a question or dialog |
-| `\(^o^)/` | done, under 2 min: `just finished!` |
-| `(^_^)` | done, 2 min to 1 hour: `done` |
-| `(-.-)zZ` | parked (dim): done more than 1 hour ago, you moved on |
+| `\(^o^)/` | done, under 2 min |
+| `(^_^)` | done, 2 min to 1 hour |
+| `(-.-)zZ` | parked (dim): done more than 1 hour ago |
 | `(-_-) /` | working (the `/` is a spinner) |
 
-Done sessions never get more worried over time; they just fade.
+Keys: `p` shows or hides parked rows, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
 
-**Keys.** `p` hides or shows parked rows, `q` quits. Change the parking time with the `PI_STATUS_PARK_MIN` environment variable (minutes).
-
-**Bottom line.** One quip: unblock stuck agents first, otherwise "nothing urgent" (with a count of fresh results when there are some).
-
-**Gotchas.**
-- Only sessions that loaded the beacon show up: `/reload` pi sessions and restart Claude Code sessions after installing (see Install). A Claude session appears after its next hook event.
-- Claude Code entries have no PID, so a killed terminal can linger up to 12 hours.
-- Pi `needs you` is best-effort (see Notes).
-
-## Notes
-
-- Claude Code entries have no PID, so they are removed on SessionEnd or after 12h without updates.
-- Subagents: Claude Code `SubagentStart`/`SubagentStop` hooks write one `sub-<session>-<agent>.json` per running subagent (no write races between parallel ones). Orphan stops are ignored; entries with no stop expire after 1h; `SessionEnd` clears them. Pi has no built-in subagents, so each pi counts as one agent.
-- States: `working`, `done` (finished its turn) and `needs you` (blocked on an approval or a question). Claude Code: `Stop` = done; `Notification` with `permission_prompt` or `elicitation_dialog` = needs you; `idle_prompt` = done; `PostToolUse` flips back to working. Pi: `agent_end` = done; `ui_prompt_start` (best effort, pi >= 0.85) = needs you, cleared by the next turn/tool event.
-- Pi workers from subagent extensions run as child pi processes. When `PI_SUBAGENT_DEPTH > 0` the beacon records them as subagents of the parent pi (via parent pid) instead of separate agents.
-- Pi events used: session_start, agent_start, agent_end, session_shutdown.
+Only sessions that loaded a beacon show up. A Claude Code session appears after its next hook event.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Fun project, use it however you like.
+MIT, see [LICENSE](LICENSE).
