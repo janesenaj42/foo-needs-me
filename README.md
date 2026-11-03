@@ -30,18 +30,16 @@ Inside a harness that supports it, type `/fooboard` to open it in a new window. 
 
 ## Supported harnesses
 
-| Harness | Flag | Integration | Hooks into | `/fooboard` |
-|---|---|---|---|---|
-| Claude Code | `--claude` | `claude-beacon.mjs` (hooks in `~/.claude/settings.json`) | `SessionStart`, `UserPromptSubmit`, `PostToolUse`, `Notification`, `Stop`, `SessionEnd`, `SubagentStart`, `SubagentStop` | yes |
-| pi | `--pi` | `pi-beacon.ts` (extension) | `session_start`, `agent_start`, `agent_end`, `session_shutdown`, `ui_prompt_start` (pi >= 0.85) | yes |
-| opencode | `--opencode` | `opencode-beacon.ts` (plugin) | `session.status`, `session.idle`, `permission.asked`, `permission.replied` | no |
+| Harness | Flag | Integration | Hooks into | `/fooboard` | Subagents |
+|---|---|---|---|---|---|
+| Claude Code | `--claude` | `claude-beacon.mjs` (hooks in `~/.claude/settings.json`) | `SessionStart`, `UserPromptSubmit`, `PostToolUse`, `Notification`, `Stop`, `SessionEnd`, `SubagentStart`, `SubagentStop` | yes | yes |
+| pi | `--pi` | `pi-beacon.ts` (extension) | `session_start`, `agent_start`, `agent_end`, `session_shutdown`, `ui_prompt_start` (pi >= 0.85) | yes | workers with `PI_SUBAGENT_DEPTH > 0` |
+| opencode | `--opencode` | `opencode-beacon.ts` (plugin) | `session.status`, `session.idle`, `permission.asked`, `permission.replied` | no | no |
 
 How each maps to a state:
 - **Claude Code:** `Stop` and `idle_prompt` = done; `permission_prompt` and `elicitation_dialog` = needs you; `PostToolUse` = working again.
 - **pi:** `agent_end` = done; `ui_prompt_start` = needs you, cleared by the next turn or tool event.
 - **opencode:** idle = done; permission asked = needs you.
-
-Subagents: Claude Code writes one `sub-<session>-<agent>.json` per running subagent, so parallel ones never race (`SessionEnd` clears them; orphans expire after 1h). pi workers started with `PI_SUBAGENT_DEPTH > 0` are recorded as subagents of the parent pi via its pid. Claude Code entries have no pid, so they are removed on `SessionEnd` or after 12h without updates.
 
 To add another harness, see the status file format below.
 
@@ -73,7 +71,17 @@ Write `~/.foo-needs-me/status/<anything>.json` whenever a session changes state,
 | `updated` | last write (ms since epoch) |
 | `pid` | optional; the entry disappears when that process dies. Without it, an entry is dropped after 12h without an update |
 
-Subagents: `{ "kind": "sub", "session_id": "<id of the parent>" }`, or `"parent_pid"` for pid-based parents, with the same `updated` and `pid` rules.
+### Subagents
+
+A subagent is a helper a session spawns. It does not get its own row; it shows as `+N subagents` on its parent, so you can tell a session that is busy with helpers from one that is stuck.
+
+Write one file per running subagent (parallel ones never race):
+
+```json
+{ "kind": "sub", "session_id": "<id of the parent>", "updated": 1761820000000 }
+```
+
+Use `"parent_pid"` instead of `session_id` if the parent has a pid. The same `updated` and `pid` rules apply. It ends when the file is deleted, the parent session ends, or it goes 1h without an update.
 
 Any tool that can run a script on its events can report in this way. PowerShell example:
 
@@ -88,15 +96,15 @@ $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 ```
   ~ who needs me? foo needs me. ~
 
-  agents 8   needs you 2   done 2   working 2   parked 2   subagents 2
+  agents 8   needs you 2   done 2   working 2   parked 2
   [######..................] 2 need you
 
   (!_!)    api-server             claude  5m0s   approve?
   (!_!)    web-app                pi      40s    needs input
   \(^o^)/  docs-site              claude  26s    just finished!
   (^_^)    mobile-client          claude  7m0s   done
-  (-_-) /  data-pipeline          claude  4m2s   busy                +1 sub
-  (-_-) /  auth-service           pi      1m35s  busy                +1 sub
+  (-_-) /  data-pipeline          claude  4m2s   busy                +1 subagent
+  (-_-) /  auth-service           pi      1m35s  busy                +1 subagent
   (-.-)zZ  infra-scripts          claude  2h0m   parked
   (-.-)zZ  legacy-batch           claude  1h30m  parked
 
@@ -115,6 +123,8 @@ Rows are sorted: needs you, done (newest first), working, parked.
 | `(^_^)` | done, 2 min to 1 hour |
 | `(-.-)zZ` | parked (dim): done more than 1 hour ago |
 | `(-_-) /` | working (the `/` is a spinner) |
+
+`+N subagents` on a row means that session has N helpers running. It is why a session can be busy for a long time. Subagents are not counted in the header.
 
 Keys: `p` shows or hides parked rows, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
 
