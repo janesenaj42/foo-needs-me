@@ -7,8 +7,8 @@ Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your A
 ## Install
 
 ```
-npx github:janesenaj42/foo-needs-me              # installs for the tools it finds; safe to re-run
-npx github:janesenaj42/foo-needs-me --uninstall  # removes everything it installed
+npx github:janesenaj42/foo-needs-me install              # installs for the tools it finds; safe to re-run
+npx github:janesenaj42/foo-needs-me uninstall            # removes everything it installed
 ```
 
 Or from a clone:
@@ -16,20 +16,24 @@ Or from a clone:
 ```
 git clone https://github.com/janesenaj42/foo-needs-me
 cd foo-needs-me
-node install.mjs              # same flags as above
+node cli.mjs install          # same flags as above
 ```
 
 Node 18+. Force a single tool with `--pi`, `--claude` or `--opencode`.
 
-Scripts and status files live in `~/.foo-needs-me/`. The installer copies each beacon to the tool's config folder and, for Claude Code, merges hooks into `~/.claude/settings.json` (backup saved first).
+Scripts and status files live in `~/.foo-needs-me/`. The installer copies each beacon to the tool's config folder and, for Claude Code, merges hooks into `~/.claude/settings.json` (backup saved first). Restart running sessions (`/reload` in pi) so they load the beacon.
 
-Then open the dashboard in any spare terminal:
+## Open the dashboard
+
+Any of these:
 
 ```
-node ~/.foo-needs-me/dashboard.mjs
+npx github:janesenaj42/foo-needs-me start            # in the current terminal
+npx github:janesenaj42/foo-needs-me start --window   # in a new window (Windows)
+node ~/.foo-needs-me/dashboard.mjs                   # after install, no npx needed
 ```
 
-Or type `/fooboard` in pi or Claude Code to open it in a new window. Restart running sessions (`/reload` in pi) so they load the beacon.
+Or type `/fooboard` inside pi or Claude Code to open it in a new window.
 
 ## How it works
 
@@ -42,6 +46,7 @@ Each tool has a small beacon that writes one JSON file per session to `~/.foo-ne
 | `opencode-beacon.ts` | opencode plugin |
 | `dashboard.mjs` | the viewer (`--once` prints one frame, `--once --tick=N` a specific animation frame) |
 | `fooboard.mjs` | launcher that opens the viewer in a new window |
+| `cli.mjs` | the `foo-needs-me` command: `start`, `install`, `uninstall` |
 | `install.mjs` | installer / uninstaller |
 
 ### Events
