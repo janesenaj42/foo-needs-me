@@ -1,6 +1,6 @@
 # foo-needs-me
 
-Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your pi, Claude Code and opencode sessions are waiting on you. No tmux needed, works on native Windows.
+Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your AI coding agent sessions are waiting on you. No tmux needed, works on native Windows.
 
 ![dashboard](docs/dashboard.png)
 
