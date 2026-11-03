@@ -11,7 +11,15 @@ npx github:janesenaj42/foo-needs-me              # installs for the tools it fin
 npx github:janesenaj42/foo-needs-me --uninstall  # removes everything it installed
 ```
 
-Node 18+. From a clone, `node install.mjs` takes the same flags. Force a single tool with `--pi`, `--claude` or `--opencode`.
+Or from a clone:
+
+```
+git clone https://github.com/janesenaj42/foo-needs-me
+cd foo-needs-me
+node install.mjs              # same flags as above
+```
+
+Node 18+. Force a single tool with `--pi`, `--claude` or `--opencode`.
 
 Scripts and status files live in `~/.foo-needs-me/`. The installer copies each beacon to the tool's config folder and, for Claude Code, merges hooks into `~/.claude/settings.json` (backup saved first).
 
