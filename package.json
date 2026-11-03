@@ -4,9 +4,10 @@
   "description": "A tiny terminal dashboard that shows which of your pi, Claude Code and opencode sessions are waiting on you.",
   "type": "module",
   "bin": {
-    "foo-needs-me": "install.mjs"
+    "foo-needs-me": "cli.mjs"
   },
   "files": [
+    "cli.mjs",
     "install.mjs",
     "claude-beacon.mjs",
     "fooboard.mjs",
@@ -21,5 +22,8 @@
     "type": "git",
     "url": "git+https://github.com/janesenaj42/foo-needs-me.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "node cli.mjs postinstall"
+  }
 }

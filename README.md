@@ -7,56 +7,55 @@ Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your A
 ## Install
 
 ```
-npx github:janesenaj42/foo-needs-me              # installs for the tools it finds; safe to re-run
-npx github:janesenaj42/foo-needs-me --uninstall  # removes everything it installed
+npm i -g github:janesenaj42/foo-needs-me   # installs, and wires up every supported harness it finds
+foo-needs-me start                         # open the dashboard
 ```
 
-Or from a clone:
+To remove it, run `foo-needs-me uninstall` first, then `npm rm -g foo-needs-me`. (npm does not run uninstall scripts, so `npm rm` alone leaves the hooks and `~/.foo-needs-me/` behind.)
+
+To re-run the setup (for example after installing a new harness): `foo-needs-me install`. Without a global install, prefix any command with `npx github:janesenaj42/foo-needs-me`, or from a clone use `node cli.mjs <command>`; those do not auto-run the setup, so start with `install`.
+
+Node 18+. The installer sets up every supported harness it finds; force one with its flag (see below).
+
+Scripts and status files live in `~/.foo-needs-me/`. The installer copies each harness's beacon into place (and merges hooks into its settings, with a backup). Restart running sessions so they load the beacon.
+
+## Open the dashboard
 
 ```
-git clone https://github.com/janesenaj42/foo-needs-me
-cd foo-needs-me
-node install.mjs              # same flags as above
+foo-needs-me start            # in the current terminal
+foo-needs-me start --window   # in a new window (Windows)
 ```
 
-Node 18+. Force a single tool with `--pi`, `--claude` or `--opencode`.
+Inside a harness that supports it, type `/fooboard` to open it in a new window. After install you can also run `node ~/.foo-needs-me/dashboard.mjs` without npm.
 
-Scripts and status files live in `~/.foo-needs-me/`. The installer copies each beacon to the tool's config folder and, for Claude Code, merges hooks into `~/.claude/settings.json` (backup saved first).
+## Supported harnesses
 
-Then open the dashboard in any spare terminal:
+| Harness | Flag | Integration | Hooks into | `/fooboard` |
+|---|---|---|---|---|
+| Claude Code | `--claude` | `claude-beacon.mjs` (hooks in `~/.claude/settings.json`) | `SessionStart`, `UserPromptSubmit`, `PostToolUse`, `Notification`, `Stop`, `SessionEnd`, `SubagentStart`, `SubagentStop` | yes |
+| pi | `--pi` | `pi-beacon.ts` (extension) | `session_start`, `agent_start`, `agent_end`, `session_shutdown`, `ui_prompt_start` (pi >= 0.85) | yes |
+| opencode | `--opencode` | `opencode-beacon.ts` (plugin) | `session.status`, `session.idle`, `permission.asked`, `permission.replied` | no |
 
-```
-node ~/.foo-needs-me/dashboard.mjs
-```
+How each maps to a state:
+- **Claude Code:** `Stop` and `idle_prompt` = done; `permission_prompt` and `elicitation_dialog` = needs you; `PostToolUse` = working again.
+- **pi:** `agent_end` = done; `ui_prompt_start` = needs you, cleared by the next turn or tool event.
+- **opencode:** idle = done; permission asked = needs you.
 
-Or type `/fooboard` in pi or Claude Code to open it in a new window. Restart running sessions (`/reload` in pi) so they load the beacon.
+Subagents: Claude Code writes one `sub-<session>-<agent>.json` per running subagent, so parallel ones never race (`SessionEnd` clears them; orphans expire after 1h). pi workers started with `PI_SUBAGENT_DEPTH > 0` are recorded as subagents of the parent pi via its pid. Claude Code entries have no pid, so they are removed on `SessionEnd` or after 12h without updates.
+
+To add another harness, see the status file format below.
 
 ## How it works
 
-Each tool has a small beacon that writes one JSON file per session to `~/.foo-needs-me/status/`. The viewer reads that folder and renders it. The two sides only share the file format, so the viewer works the same for every tool.
+Each harness has a small beacon that writes one JSON file per session to `~/.foo-needs-me/status/`. The viewer reads that folder and renders it. The two sides only share the file format, so the viewer works the same for every harness.
 
 | File | Role |
 |---|---|
-| `pi-beacon.ts` | pi extension; adds `/fooboard` |
-| `claude-beacon.mjs` | Claude Code hook script |
-| `opencode-beacon.ts` | opencode plugin |
 | `dashboard.mjs` | the viewer (`--once` prints one frame, `--once --tick=N` a specific animation frame) |
 | `fooboard.mjs` | launcher that opens the viewer in a new window |
+| `cli.mjs` | the `foo-needs-me` command: `start`, `install`, `uninstall` |
 | `install.mjs` | installer / uninstaller |
-
-### Events
-
-| Tool | Hooks into | Mapping |
-|---|---|---|
-| Claude Code | `SessionStart`, `UserPromptSubmit`, `PostToolUse`, `Notification`, `Stop`, `SessionEnd`, `SubagentStart`, `SubagentStop` | `Stop` and `idle_prompt` = done; `permission_prompt` and `elicitation_dialog` = needs you; `PostToolUse` = working again |
-| pi | `session_start`, `agent_start`, `agent_end`, `session_shutdown`, `ui_prompt_start` (pi >= 0.85) | `agent_end` = done; `ui_prompt_start` = needs you, cleared by the next turn or tool event |
-| opencode | `session.status`, `session.idle`, `permission.asked`, `permission.replied` | idle = done; permission asked = needs you |
-
-Subagents:
-- Claude Code writes one `sub-<session>-<agent>.json` per running subagent, so parallel ones never race. `SessionEnd` clears them; orphans expire after 1h.
-- pi workers started with `PI_SUBAGENT_DEPTH > 0` are recorded as subagents of the parent pi via its pid.
-
-Claude Code entries have no pid, so they are removed on `SessionEnd` or after 12h without updates.
+| `*-beacon.*` | one per harness, see above |
 
 ## Status file format
 
