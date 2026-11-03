@@ -101,7 +101,7 @@ function frame(tick) {
   L.push("  " + c("1;35", "~ who needs me? foo needs me. ~"));
   L.push("");
   L.push(
-    `  agents ${c("1", rows.length)}   ${c("1;33", "needs you " + blocked)}   ${c("32", "done " + fresh)}   ${c("36", "working " + working)}   ${c("2", "parked " + parkedN)}   subagents ${c("1", subs.length)}`,
+    `  agents ${c("1", rows.length)}   ${c("1;33", "needs you " + blocked)}   ${c("32", "done " + fresh)}   ${c("36", "working " + working)}   ${c("2", "parked " + parkedN)}`,
   );
   L.push(`  [${bar}] ${urgent}`);
   L.push("");
@@ -114,7 +114,7 @@ function frame(tick) {
     const n = subsOf(r).length;
     const line =
       c(m.col, pad(m.face, 8)) + " " + pad(basename(r.cwd) || r.cwd, 22) + " " + tool + " " +
-      pad(fmt(waited), 7) + c(m.col === "36" ? "2" : m.col, pad(m.note, 20)) + (n ? c("33", `+${n} sub`) : "");
+      pad(fmt(waited), 7) + c(m.col === "36" ? "2" : m.col, pad(m.note, 20)) + (n ? c("33", `+${n} subagent${n > 1 ? "s" : ""}`) : "");
     L.push("  " + (m.col === "2" ? c("2", line.replace(/\x1b\[[0-9;]*m/g, "")) : line)); // parked rows fade out
   }
   if (hideParked && parkedN) L.push("  " + c("2", `(${parkedN} parked hidden)`));
