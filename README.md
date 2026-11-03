@@ -128,8 +128,6 @@ Rows are sorted: needs you, done (newest first), working, parked.
 
 Rows always fit the terminal and never wrap. Long project names are shortened with `…`. Press `f` to see them in full (press again to go back): the project column widens if the terminal has room, otherwise the full name appears on its own line under the row. The `f` hint only shows when a name is cut. In a narrow terminal (under about 70 columns) the `+N subagents` tag is dropped to leave room for names.
 
-![f toggles full project names](docs/long-names.gif)
-
 Keys: `p` shows or hides parked rows, `f` toggles full project names, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
 
 Only sessions that loaded a beacon show up. A Claude Code session appears after its next hook event.
