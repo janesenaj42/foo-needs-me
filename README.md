@@ -25,22 +25,16 @@ Scripts and status files live in `~/.foo-needs-me/`. The installer copies each b
 
 ## Open the dashboard
 
-Any of these:
+There are a few ways because people work differently. Pick one:
 
 ```
-npx github:janesenaj42/foo-needs-me start            # in the current terminal
-npx github:janesenaj42/foo-needs-me start --window   # in a new window (Windows)
-node ~/.foo-needs-me/dashboard.mjs                   # after install, no npx needed
+foo-needs-me start                                   # daily use: after `npm i -g github:janesenaj42/foo-needs-me`
+npx github:janesenaj42/foo-needs-me start            # one-off: nothing to keep installed
+npx github:janesenaj42/foo-needs-me start --window   # same, in a new window (Windows)
+node ~/.foo-needs-me/dashboard.mjs                   # after install, if you'd rather not use npm or npx
 ```
 
-For a short command, install the package globally once. `npx` alone does not put `foo-needs-me` on your PATH:
-
-```
-npm i -g github:janesenaj42/foo-needs-me
-foo-needs-me start
-```
-
-Or type `/fooboard` inside pi or Claude Code to open it in a new window.
+Inside pi or Claude Code, type `/fooboard` to open it in a new window.
 
 ## How it works
 
