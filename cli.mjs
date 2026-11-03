@@ -4,6 +4,7 @@
 //   install [flags]    install the beacons (same as install.mjs)
 //   uninstall          remove everything install put in place
 //   (no command)       install, as before
+//   postinstall        run by `npm i -g` (global installs only)
 import { spawn, spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,6 +28,11 @@ switch (cmd) {
     }
     break;
   }
+  case "postinstall": // npm i -g only: wire up harnesses. Never fails the npm install, and npx/local installs are left alone.
+    if (process.env.npm_config_global !== "true") process.exit(0);
+    spawnSync(node, [join(here, "install.mjs")], { stdio: "inherit" });
+    console.log("\nTo undo: run `foo-needs-me uninstall` before `npm rm -g foo-needs-me` (npm does not run uninstall scripts).");
+    process.exit(0);
   case "install": run("install.mjs", rest); break;
   case "uninstall": run("install.mjs", ["--uninstall", ...rest]); break;
   case "-h": case "--help": case "help":

@@ -22,5 +22,8 @@
     "type": "git",
     "url": "git+https://github.com/janesenaj42/foo-needs-me.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "node cli.mjs postinstall"
+  }
 }

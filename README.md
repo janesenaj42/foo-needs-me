@@ -7,13 +7,13 @@ Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your A
 ## Install
 
 ```
-npm i -g github:janesenaj42/foo-needs-me
-foo-needs-me install      # installs for the tools it finds; safe to re-run
-foo-needs-me start        # open the dashboard
-foo-needs-me uninstall    # removes everything it installed
+npm i -g github:janesenaj42/foo-needs-me   # installs, and wires up every supported harness it finds
+foo-needs-me start                         # open the dashboard
 ```
 
-No global install? Prefix any command with `npx github:janesenaj42/foo-needs-me`, or from a clone use `node cli.mjs <command>`.
+To remove it, run `foo-needs-me uninstall` first, then `npm rm -g foo-needs-me`. (npm does not run uninstall scripts, so `npm rm` alone leaves the hooks and `~/.foo-needs-me/` behind.)
+
+To re-run the setup (for example after installing a new harness): `foo-needs-me install`. Without a global install, prefix any command with `npx github:janesenaj42/foo-needs-me`, or from a clone use `node cli.mjs <command>`; those do not auto-run the setup, so start with `install`.
 
 Node 18+. The installer sets up every supported harness it finds; force one with its flag (see below).
 
