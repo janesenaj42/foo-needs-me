@@ -33,6 +33,13 @@ npx github:janesenaj42/foo-needs-me start --window   # in a new window (Windows)
 node ~/.foo-needs-me/dashboard.mjs                   # after install, no npx needed
 ```
 
+For a short command, install the package globally once. `npx` alone does not put `foo-needs-me` on your PATH:
+
+```
+npm i -g github:janesenaj42/foo-needs-me
+foo-needs-me start
+```
+
 Or type `/fooboard` inside pi or Claude Code to open it in a new window.
 
 ## How it works
