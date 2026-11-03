@@ -126,7 +126,7 @@ Rows are sorted: needs you, done (newest first), working, parked.
 
 `+N subagents` on a row means that session has N helpers running. It is why a session can be busy for a long time. Subagents are not counted in the header.
 
-Long project names are shortened with `…` so rows fit the terminal. Press `f` to show them in full (and again to shorten). The hint only appears when a name is cut.
+Rows always fit the terminal and never wrap. Long project names are shortened with `…`; press `f` to show them in full (and again to shorten), as far as the window allows. The `f` hint only appears when a name is cut. In a narrow terminal (under about 70 columns) the `+N subagents` tag is dropped to leave room for names.
 
 ![f toggles full project names](docs/long-names.gif)
 
