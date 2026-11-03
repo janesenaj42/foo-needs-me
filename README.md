@@ -14,7 +14,11 @@ Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your p
     npx github:janesenaj42/foo-needs-me              # installs for the tools it finds; safe to re-run
     npx github:janesenaj42/foo-needs-me --uninstall  # remove everything it installed
 
-Or from a clone: `node install.mjs` (same flags).
+Or from a clone:
+
+    git clone https://github.com/janesenaj42/foo-needs-me
+    cd foo-needs-me
+    node install.mjs              # same flags as above
 
 Needs Node 18+. Everything lives in `~/.foo-needs-me/` (scripts and the `status/` folder), so you do not need pi installed for this to work. The installer only sets up the tools it finds (`pi`, `claude`, `opencode` on your PATH or their config folders). Force one with `--pi`, `--claude` or `--opencode`.
 
