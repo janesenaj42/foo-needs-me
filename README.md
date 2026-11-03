@@ -7,17 +7,13 @@ Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your A
 ## Install
 
 ```
-npx github:janesenaj42/foo-needs-me install              # installs for the tools it finds; safe to re-run
-npx github:janesenaj42/foo-needs-me uninstall            # removes everything it installed
+npm i -g github:janesenaj42/foo-needs-me
+foo-needs-me install      # installs for the tools it finds; safe to re-run
+foo-needs-me start        # open the dashboard
+foo-needs-me uninstall    # removes everything it installed
 ```
 
-Or from a clone:
-
-```
-git clone https://github.com/janesenaj42/foo-needs-me
-cd foo-needs-me
-node cli.mjs install          # same flags as above
-```
+No global install? Prefix any command with `npx github:janesenaj42/foo-needs-me`, or from a clone use `node cli.mjs <command>`.
 
 Node 18+. Force a single tool with `--pi`, `--claude` or `--opencode`.
 
@@ -25,16 +21,12 @@ Scripts and status files live in `~/.foo-needs-me/`. The installer copies each b
 
 ## Open the dashboard
 
-There are a few ways because people work differently. Pick one:
-
 ```
-foo-needs-me start                                   # daily use: after `npm i -g github:janesenaj42/foo-needs-me`
-npx github:janesenaj42/foo-needs-me start            # one-off: nothing to keep installed
-npx github:janesenaj42/foo-needs-me start --window   # same, in a new window (Windows)
-node ~/.foo-needs-me/dashboard.mjs                   # after install, if you'd rather not use npm or npx
+foo-needs-me start            # in the current terminal
+foo-needs-me start --window   # in a new window (Windows)
 ```
 
-Inside pi or Claude Code, type `/fooboard` to open it in a new window.
+Inside pi or Claude Code, type `/fooboard` to open it in a new window. After install you can also run `node ~/.foo-needs-me/dashboard.mjs` without npm.
 
 ## How it works
 
