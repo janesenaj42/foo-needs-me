@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Usage:
 //   node install.mjs                 install for the tools it finds (pi, Claude Code); safe to re-run
 //   node install.mjs --pi            only pi

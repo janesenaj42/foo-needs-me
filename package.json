@@ -1,0 +1,25 @@
+{
+  "name": "foo-needs-me",
+  "version": "0.1.0",
+  "description": "A tiny terminal dashboard that shows which of your pi, Claude Code and opencode sessions are waiting on you.",
+  "type": "module",
+  "bin": {
+    "foo-needs-me": "install.mjs"
+  },
+  "files": [
+    "install.mjs",
+    "cc-beacon.mjs",
+    "fooboard.mjs",
+    "pi-status.mjs",
+    "status-beacon.ts",
+    "opencode-beacon.ts"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/janesenaj42/foo-needs-me.git"
+  },
+  "license": "MIT"
+}
