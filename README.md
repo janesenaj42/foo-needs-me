@@ -26,7 +26,7 @@ Scripts and status files live in `~/.foo-needs-me/`. The installer copies each b
 Then open the dashboard in any spare terminal:
 
 ```
-node ~/.foo-needs-me/pi-status.mjs
+node ~/.foo-needs-me/dashboard.mjs
 ```
 
 Or type `/fooboard` in pi or Claude Code to open it in a new window. Restart running sessions (`/reload` in pi) so they load the beacon.
@@ -37,10 +37,10 @@ Each tool has a small beacon that writes one JSON file per session to `~/.foo-ne
 
 | File | Role |
 |---|---|
-| `status-beacon.ts` | pi extension; adds `/fooboard` |
-| `cc-beacon.mjs` | Claude Code hook script |
+| `pi-beacon.ts` | pi extension; adds `/fooboard` |
+| `claude-beacon.mjs` | Claude Code hook script |
 | `opencode-beacon.ts` | opencode plugin |
-| `pi-status.mjs` | the viewer (`--once` prints one frame, `--once --tick=N` a specific animation frame) |
+| `dashboard.mjs` | the viewer (`--once` prints one frame, `--once --tick=N` a specific animation frame) |
 | `fooboard.mjs` | launcher that opens the viewer in a new window |
 | `install.mjs` | installer / uninstaller |
 

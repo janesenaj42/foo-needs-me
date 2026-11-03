@@ -8,10 +8,10 @@
   },
   "files": [
     "install.mjs",
-    "cc-beacon.mjs",
+    "claude-beacon.mjs",
     "fooboard.mjs",
-    "pi-status.mjs",
-    "status-beacon.ts",
+    "dashboard.mjs",
+    "pi-beacon.ts",
     "opencode-beacon.ts"
   ],
   "engines": {

@@ -31,7 +31,7 @@ const ocPlugin = join(home, ".config", "opencode", "plugins", "foo-needs-me.ts")
 const cmdFile = join(home, ".claude", "commands", "fooboard.md");
 const settingsPath = join(home, ".claude", "settings.json");
 const EVENTS = ["SessionStart", "UserPromptSubmit", "PostToolUse", "Notification", "Stop", "SessionEnd", "SubagentStart", "SubagentStop"];
-const beaconPath = join(base, "cc-beacon.mjs").replace(/\\/g, "/");
+const beaconPath = join(base, "claude-beacon.mjs").replace(/\\/g, "/");
 const hookCmd = `node ${beaconPath}`;
 const launcher = join(base, "fooboard.mjs").replace(/\\/g, "/");
 const cmdBody = `---
@@ -42,7 +42,7 @@ allowed-tools: Bash(node:*)
 
 Reply with one short line: say the dashboard opened, or relay the message printed above if it could not open a window.
 `;
-const isOurs = (h) => typeof h?.command === "string" && h.command.includes("cc-beacon.mjs");
+const isOurs = (h) => typeof h?.command === "string" && /(claude|cc)-beacon\.mjs/.test(h.command);
 
 // files from the first version of this project, which lived under ~/.pi
 const legacy = [
@@ -50,6 +50,9 @@ const legacy = [
   join(home, ".pi", "cc-beacon.mjs"),
   join(home, ".pi", "fooboard.mjs"),
   join(home, ".pi", "agent", "extensions", "status-beacon.ts"),
+  // files from before the per-harness renames
+  join(base, "pi-status.mjs"),
+  join(base, "cc-beacon.mjs"),
 ];
 
 function loadSettings() {
@@ -89,12 +92,12 @@ if (uninstall) {
 
 // shared: viewer + launcher
 mkdirSync(base, { recursive: true });
-for (const f of ["pi-status.mjs", "fooboard.mjs"]) { copyFileSync(join(here, f), join(base, f)); console.log("installed", join(base, f)); }
+for (const f of ["dashboard.mjs", "fooboard.mjs"]) { copyFileSync(join(here, f), join(base, f)); console.log("installed", join(base, f)); }
 for (const p of legacy) rm(p); // migrate from the old ~/.pi layout
 
 if (wantPi) {
   mkdirSync(dirname(piExt), { recursive: true });
-  copyFileSync(join(here, "status-beacon.ts"), piExt);
+  copyFileSync(join(here, "pi-beacon.ts"), piExt);
   console.log("installed", piExt);
 }
 
@@ -105,8 +108,8 @@ if (wantOpencode) {
 }
 
 if (wantClaude) {
-  copyFileSync(join(here, "cc-beacon.mjs"), join(base, "cc-beacon.mjs"));
-  console.log("installed", join(base, "cc-beacon.mjs"));
+  copyFileSync(join(here, "claude-beacon.mjs"), join(base, "claude-beacon.mjs"));
+  console.log("installed", join(base, "claude-beacon.mjs"));
   mkdirSync(dirname(cmdFile), { recursive: true });
   writeFileSync(cmdFile, cmdBody);
   console.log("installed", cmdFile);
@@ -121,4 +124,4 @@ if (wantClaude) {
 console.log(`\nInstalled for: ${[wantPi && "pi", wantClaude && "Claude Code", wantOpencode && "opencode"].filter(Boolean).join(" + ") || "nothing yet (no tool found)"}`);
 if (!wantPi && !wantClaude && !wantOpencode) console.log("No pi, Claude Code or opencode found. Re-run with --pi, --claude or --opencode to force one.");
 console.log(`Next:
-${wantPi ? "  pi:          /reload in each pi session (or restart it), then type /fooboard\n" : ""}${wantClaude ? "  Claude Code: restart running sessions (hooks load at startup), then type /fooboard\n" : ""}${wantOpencode ? "  opencode:    restart opencode (plugins load at startup); no slash command, use the line below\n" : ""}  either way:  node ${join(base, "pi-status.mjs")}   in any spare terminal`);
+${wantPi ? "  pi:          /reload in each pi session (or restart it), then type /fooboard\n" : ""}${wantClaude ? "  Claude Code: restart running sessions (hooks load at startup), then type /fooboard\n" : ""}${wantOpencode ? "  opencode:    restart opencode (plugins load at startup); no slash command, use the line below\n" : ""}  either way:  node ${join(base, "dashboard.mjs")}   in any spare terminal`);
