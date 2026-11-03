@@ -131,7 +131,6 @@ function frame(tick) {
   const showTag = tagW > 0;
   const room = Math.max(8, cols - 1 - 27 - noteW - tagW);
   const nameW = Math.min(longest, room, fullNames ? Infinity : 32);
-  const trimmed = shown.some((r) => nameOf(r).length > nameW);
 
   for (const r of rows) {
     if (hideParked && parked(r, now)) continue;
@@ -150,7 +149,7 @@ function frame(tick) {
   if (hideParked && parkedN) L.push("  " + c("2", `(${parkedN} parked hidden)`));
   L.push("");
   L.push("  " + c("2", quip(blocked, fresh, rows.length)));
-  L.push(c("2", "  q quit   p show/hide parked" + (trimmed || fullNames ? "   f " + (fullNames ? "shorten names" : "full names") : "")));
+  L.push(c("2", "  q quit   p show/hide parked   f " + (fullNames ? "shorten names" : "full names")));
   const w = process.stdout.columns || 120;
   return L.map((l) => clip(l, w));
 }

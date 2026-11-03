@@ -109,7 +109,7 @@ $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   (-.-)zZ  legacy-batch           claude  1h30m  parked
 
   2 are stuck on you. unblock them first.
-  q quit   p show/hide parked
+  q quit   p show/hide parked   f full names
 ```
 
 Only **needs you** is urgent. A finished session fades as you move on, so a pile of done sessions never looks like a to-do list.
@@ -126,7 +126,7 @@ Rows are sorted: needs you, done (newest first), working, parked.
 
 `+N subagents` on a row means that session has N helpers running. It is why a session can be busy for a long time. Subagents are not counted in the header.
 
-Rows always fit the terminal and never wrap. Long project names are shortened with `…`. Press `f` to see them in full (press again to go back): the project column widens if the terminal has room, otherwise the full name appears on its own line under the row. The `f` hint only shows when a name is cut. In a narrow terminal (under about 70 columns) the `+N subagents` tag is dropped to leave room for names.
+Rows always fit the terminal and never wrap. Long project names are shortened with `…`. Press `f` to see them in full (press again to go back): the project column widens if the terminal has room, otherwise the full name appears on its own line under the row. In a narrow terminal (under about 70 columns) the `+N subagents` tag is dropped to leave room for names.
 
 Keys: `p` shows or hides parked rows, `f` toggles full project names, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
 
