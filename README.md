@@ -126,7 +126,11 @@ Rows are sorted: needs you, done (newest first), working, parked.
 
 `+N subagents` on a row means that session has N helpers running. It is why a session can be busy for a long time. Subagents are not counted in the header.
 
-Keys: `p` shows or hides parked rows, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
+Long project names are shortened with `…` so rows fit the terminal. Press `f` to show them in full (and again to shorten). The hint only appears when a name is cut.
+
+![f toggles full project names](docs/long-names.gif)
+
+Keys: `p` shows or hides parked rows, `f` toggles full project names, `q` quits. Set the parking time with `PI_STATUS_PARK_MIN` (minutes, default 60).
 
 Only sessions that loaded a beacon show up. A Claude Code session appears after its next hook event.
 

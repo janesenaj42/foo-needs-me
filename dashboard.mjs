@@ -24,6 +24,7 @@ const pad = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s.padEnd(n));
 
 let rows = [];
 let subs = [];
+let fullNames = process.argv.includes("--full-names"); // e toggles: lift the name cap
 // claude subagents link by session id; pi workers link by parent pid (nested workers roll up to the root pi)
 function rootPid(sub) {
   let pp = sub.parent_pid;
@@ -105,6 +106,15 @@ function frame(tick) {
   );
   L.push(`  [${bar}] ${urgent}`);
   L.push("");
+  // project column fits the longest name, capped so rows never outgrow the terminal
+  // (fixed columns + the "+N subagents" tag take 59). Without the toggle the cap is 32.
+  const nameOf = (r) => basename(r.cwd) || r.cwd;
+  const shown = rows.filter((r) => !(hideParked && parked(r, now)));
+  const longest = Math.max(22, ...shown.map((r) => nameOf(r).length));
+  const termCap = Math.max(22, (process.stdout.columns || 120) - 59);
+  const nameW = Math.min(longest, termCap, fullNames ? Infinity : 32);
+  const trimmed = shown.some((r) => nameOf(r).length > nameW);
+
   for (const r of rows) {
     if (hideParked && parked(r, now)) continue;
     const waited = now - r.since;
@@ -113,14 +123,14 @@ function frame(tick) {
     const tool = c(toolCol, pad(String(r.kind || "?"), 7));
     const n = subsOf(r).length;
     const line =
-      c(m.col, pad(m.face, 8)) + " " + pad(basename(r.cwd) || r.cwd, 22) + " " + tool + " " +
+      c(m.col, pad(m.face, 8)) + " " + pad(nameOf(r), nameW) + " " + tool + " " +
       pad(fmt(waited), 7) + c(m.col === "36" ? "2" : m.col, pad(m.note, 20)) + (n ? c("33", `+${n} subagent${n > 1 ? "s" : ""}`) : "");
     L.push("  " + (m.col === "2" ? c("2", line.replace(/\x1b\[[0-9;]*m/g, "")) : line)); // parked rows fade out
   }
   if (hideParked && parkedN) L.push("  " + c("2", `(${parkedN} parked hidden)`));
   L.push("");
   L.push("  " + c("2", quip(blocked, fresh, rows.length)));
-  L.push(c("2", "  q quit   p show/hide parked"));
+  L.push(c("2", "  q quit   p show/hide parked" + (trimmed || fullNames ? "   f " + (fullNames ? "shorten names" : "full names") : "")));
   return L;
 }
 
@@ -143,6 +153,7 @@ if (process.stdin.isTTY) {
     const k = String(d);
     if (k === "q" || k === "\x03") quit();
     if (k === "p") hideParked = !hideParked;
+    if (k === "f") fullNames = !fullNames;
   });
 }
 process.on("SIGINT", quit);
