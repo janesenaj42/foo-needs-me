@@ -144,6 +144,8 @@ function frame(tick) {
       c(m.col, pad(m.face, 8)) + " " + pad(nameOf(r), nameW) + " " + tool + " " +
       pad(fmt(waited), 7) + c(m.col === "36" ? "2" : m.col, n ? pad(m.note, noteW) : m.note) + (n ? c("33", `+${n} subagent${n > 1 ? "s" : ""}`) : "");
     L.push("  " + (m.col === "2" ? c("2", line.replace(/\x1b\[[0-9;]*m/g, "")) : line)); // parked rows fade out
+    // f is on but the name still does not fit (narrow terminal): show it in full on its own line
+    if (fullNames && nameOf(r).length > nameW) L.push("  " + c("2", " ".repeat(9) + "\u21b3 " + nameOf(r)));
   }
   if (hideParked && parkedN) L.push("  " + c("2", `(${parkedN} parked hidden)`));
   L.push("");
