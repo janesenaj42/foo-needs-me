@@ -5,10 +5,19 @@ Foo needs me? Who needs me? A tiny terminal dashboard that shows which of your A
 ![dashboard](docs/dashboard.png)
 
 ## Install
-
+Installs, and wires up every supported harness it finds,
 ```
-npm i -g github:janesenaj42/foo-needs-me   # installs, and wires up every supported harness it finds
-foo-needs-me start                         # open the dashboard
+# From Github
+npm i -g github:janesenaj42/foo-needs-me
+
+# From a repo clone
+cd foo-needs-me
+npm i -g .
+```
+
+To start and open the dashboard,
+```
+foo-needs-me start          
 ```
 
 To remove it, run `foo-needs-me uninstall` first, then `npm rm -g foo-needs-me`. (npm does not run uninstall scripts, so `npm rm` alone leaves the hooks and `~/.foo-needs-me/` behind.)
